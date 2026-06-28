@@ -35,8 +35,8 @@
   @media(max-width:640px){.controls{grid-template-columns:1fr}}
   .ctl{display:grid;grid-template-columns:90px 1fr 54px;align-items:center;gap:12px}
   .ctl label{color:var(--muted);font-size:14px}
-  input[type=range]{-webkit-appearance:none;height:5px;background:var(--line);border-radius:4px;outline:none}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid var(--bg)}
+  input[type=range]{appearance:none;-webkit-appearance:none;height:5px;background:var(--line);border-radius:4px;outline:none}
+  input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid var(--bg)}
   .pill{background:var(--panel2);border:1px solid var(--line);border-radius:8px;text-align:center;font-weight:700;padding:6px 0;font-variant-numeric:tabular-nums}
   .presets{display:flex;gap:12px;margin-top:18px}
   .presets button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--txt);
@@ -54,7 +54,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Decision-Tree → Silicon: why we made these choices</h1>
+  <h1>Decision-Tree → Silicon: why I made these choices</h1>
   <p class="sub">Interactive. Drag the sliders and watch the cost of the same model in <b>software</b> (a CPU / ESP32) vs <b>hardware</b> (an FPGA). The point of the project: the trees are cheap — the <i>features</i> are what's expensive to compute and verify.</p>
 
   <!-- CHART -->
@@ -90,7 +90,7 @@
       <div class="ctl"><label>Features</label><input type="range" id="sFeat" min="1" max="50" value="4"><div class="pill" id="vFeat">4</div></div>
     </div>
     <div class="presets">
-      <button onclick="setPreset(25,4,4)">▸ Edge Model — 4 feat · d4 · 25 trees (what we ship to RTL)</button>
+      <button onclick="setPreset(25,4,4)">▸ Edge Model — 4 feat · d4 · 25 trees (what I ship to RTL)</button>
       <button onclick="setPreset(366,5,40)">▸ Server Model — 40 feat · d5 · 366 trees</button>
     </div>
   </div>
@@ -99,9 +99,9 @@
   <div class="panel why">
     <h3>Why this configuration <span class="tag" id="verdictTag"></span></h3>
     <p id="whyText"></p>
-    <div class="insight"><b>The exponential wall:</b> hardware comparators = <code>trees × (2^depth − 1)</code>. Depth is exponential — depth 10 is <b>~33×</b> the area of depth 5. That's why deep trees are a hardware trap. (They also overfit — we measured it — so we never wanted them anyway.)</div>
+    <div class="insight"><b>The exponential wall:</b> hardware comparators = <code>trees × (2^depth − 1)</code>. Depth is exponential — depth 10 is <b>~33×</b> the area of depth 5. That's why deep trees are a hardware trap. (They also overfit — I measured it — so I never wanted them anyway.)</div>
     <div class="insight"><b>Software doesn't care:</b> a CPU/ESP32 walks the trees one node at a time from memory — cost is linear (<code>trees × depth</code>), not exponential. A huge model just takes a few more microseconds. So "fits in hardware" is a different question from "runs on a chip."</div>
-    <div class="insight"><b>The trees are cheap; the features are expensive.</b> Adding features barely changes the tree logic — but each feature must be <i>computed</i> in hardware (rolling means = shift registers; the messy ones need variable divisors + missingness tracking). And every feature you compute, you must verify <b>bit-exact</b> against Python. That verification cost — not silicon area — is the real reason we ship 4 clean features instead of 40.</div>
+    <div class="insight"><b>The trees are cheap; the features are expensive.</b> Adding features barely changes the tree logic — but each feature must be <i>computed</i> in hardware (rolling means = shift registers; the messy ones need variable divisors + missingness tracking). And every feature you compute, you must verify <b>bit-exact</b> against Python. That verification cost — not silicon area — is the real reason I ship 4 clean features instead of 40.</div>
     <p class="foot">Hardware numbers are exact. ROC-AUC is illustrative, anchored to two <b>measured</b> points: 4 features → 0.674, 40 features → 0.722 (5-fold patient CV). Both models fit real FPGAs; the edge model fits the <i>cheapest</i> one and is tractable to verify.</p>
   </div>
 </div>
