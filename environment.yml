@@ -11,10 +11,10 @@ dependencies:
   - seaborn
   - ipykernel
   - jupyterlab
-  - iverilog        # Verilog simulator for co-simulation verification (or use Vivado XSim)
+  - iverilog        
   - pip
   - pip:
-    - xgboost          # TreeSHAP comes free via booster.predict(pred_contribs=True) — no `shap` lib needed
+    - xgboost        
     - optuna
     - dash
     - plotly

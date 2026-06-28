@@ -73,6 +73,8 @@ vvp hw/sim.vvp
 ```
 *(Alternatively, you can load these files into Xilinx Vivado and run the simulation using XSim).*
 
+![Vivado Simulation Waveform](figures/Vivado_simulation.png)
+
 ### 4. Launch the Bedside Monitor Demo
 
 Prepare the demo patient assets and run the interactive dashboard:
@@ -81,6 +83,8 @@ python demo/prepare_demo.py
 python demo/app.py
 ```
 Then navigate to `http://127.0.0.1:8050` in your web browser.
+
+![Bedside Monitor Dashboard](figures/Dashboard.png)
 
 ---
 

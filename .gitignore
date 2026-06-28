@@ -23,11 +23,14 @@ xsim.dir/
 
 # Vivado project (auto-generated, machine-specific, huge, regenerable from hw/*.v)
 Vivado/
+.Xil/
 *.cache/
 *.hw/
 *.runs/
 *.sim/
 *.jou
+*.pb
+*.wdb
 *.str
 vivado*.backup.*
 
