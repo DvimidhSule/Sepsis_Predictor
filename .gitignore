@@ -1,0 +1,45 @@
+# secrets
+.env
+*.key
+
+# python / jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# data (large + redistribution-restricted)
+data/
+*.psv
+
+# hardware sim build artifacts (regenerable)
+*.vcd
+*.vvp
+hw/xsim.dir/
+hw/*.jou
+hw/*.log
+hw/*.pb
+hw/*.wdb
+xsim.dir/
+
+# Vivado project (auto-generated, machine-specific, huge, regenerable from hw/*.v)
+Vivado/
+*.cache/
+*.hw/
+*.runs/
+*.sim/
+*.jou
+*.str
+vivado*.backup.*
+
+# local editor/agent settings
+.claude/settings.local.json
+
+# study notes and dev logs (local study only)
+DEVLOG.md
+PROJECT_SUMMARY.md
+INTERVIEW_QA.md
+STUDY_GUIDE.md
+
+# misc
+*.log
+scratch_*

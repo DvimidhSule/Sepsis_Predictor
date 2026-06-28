@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sepsis Engine — Why These Hardware Choices</title>
+<style>
+  :root{
+    --bg:#0d0f14; --panel:#161a22; --panel2:#1e2430; --line:#2a3140;
+    --txt:#e6e9ef; --muted:#8a93a6; --amber:#f5b945; --green:#46c98b;
+    --red:#ef5e6a; --blue:#5b9dff; --accent:#9b7bff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;padding:32px 20px}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 24px;font-size:15px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:18px}
+  .chart{position:relative;padding:10px 0 4px}
+  .axis{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:14px}
+  .barrow{display:grid;grid-template-columns:130px 1fr;align-items:center;margin:12px 0;gap:10px}
+  .barlabel{color:var(--muted);font-size:13px;text-align:right}
+  .bartrack{position:relative;height:30px;background:var(--panel2);border-radius:6px;overflow:visible}
+  .barfill{height:100%;border-radius:6px;transition:width .25s ease,background .25s;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:12px;font-weight:600;color:#0d0f14;min-width:34px;white-space:nowrap}
+  .limit{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed var(--red)}
+  .limit span{position:absolute;top:-18px;left:6px;color:var(--red);font-size:11px;white-space:nowrap}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:4px}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .metric .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .metric .v{font-size:24px;font-weight:700;margin-top:4px}
+  .metric .n{font-size:12px;color:var(--muted);margin-top:2px}
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:640px){.controls{grid-template-columns:1fr}}
+  .ctl{display:grid;grid-template-columns:90px 1fr 54px;align-items:center;gap:12px}
+  .ctl label{color:var(--muted);font-size:14px}
+  input[type=range]{-webkit-appearance:none;height:5px;background:var(--line);border-radius:4px;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid var(--bg)}
+  .pill{background:var(--panel2);border:1px solid var(--line);border-radius:8px;text-align:center;font-weight:700;padding:6px 0;font-variant-numeric:tabular-nums}
+  .presets{display:flex;gap:12px;margin-top:18px}
+  .presets button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+    padding:12px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;transition:.15s}
+  .presets button:hover{border-color:var(--accent);background:#222838}
+  .verdict{font-weight:700}
+  .why{font-size:14px}
+  .why h3{margin:0 0 10px;font-size:15px}
+  .why p{margin:0 0 10px;color:#cdd3df}
+  .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600;margin-left:6px}
+  .insight{border-left:3px solid var(--accent);padding:4px 0 4px 14px;margin:14px 0;color:#cdd3df}
+  code{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:13px;color:var(--amber)}
+  .foot{color:var(--muted);font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Decision-Tree → Silicon: why we made these choices</h1>
+  <p class="sub">Interactive. Drag the sliders and watch the cost of the same model in <b>software</b> (a CPU / ESP32) vs <b>hardware</b> (an FPGA). The point of the project: the trees are cheap — the <i>features</i> are what's expensive to compute and verify.</p>
+
+  <!-- CHART -->
+  <div class="panel chart">
+    <div class="axis" id="axis"></div>
+    <div class="barrow">
+      <div class="barlabel">HW comparators<br><span style="font-size:11px">(parallel, area)</span></div>
+      <div class="bartrack"><div class="barfill" id="barHW" style="background:var(--amber)"></div>
+        <div class="limit" id="limitLine"><span id="limitLbl"></span></div></div>
+    </div>
+    <div class="barrow">
+      <div class="barlabel">Software ops<br><span style="font-size:11px">(sequential, time)</span></div>
+      <div class="bartrack"><div class="barfill" id="barSW" style="background:var(--green)"></div></div>
+    </div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="panel">
+    <div class="metrics">
+      <div class="metric"><div class="k">HW comparators</div><div class="v" id="mHW">—</div><div class="n" id="mHWn">trees × (2^depth − 1)</div></div>
+      <div class="metric"><div class="k">Software ops</div><div class="v" id="mSW">—</div><div class="n">a CPU shrugs at this</div></div>
+      <div class="metric"><div class="k">Feature front-end</div><div class="v" id="mFE">—</div><div class="n">logic to COMPUTE inputs</div></div>
+      <div class="metric"><div class="k">Bit-exact verify</div><div class="v" id="mVer">—</div><div class="n">the real constraint</div></div>
+      <div class="metric"><div class="k">Est. ROC-AUC</div><div class="v" id="mAuc">—</div><div class="n" id="mAucn">illustrative</div></div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="panel">
+    <div class="controls">
+      <div class="ctl"><label>Trees</label><input type="range" id="sTrees" min="1" max="1000" value="25"><div class="pill" id="vTrees">25</div></div>
+      <div class="ctl"><label>Tree depth</label><input type="range" id="sDepth" min="1" max="12" value="4"><div class="pill" id="vDepth">4</div></div>
+      <div class="ctl"><label>Features</label><input type="range" id="sFeat" min="1" max="50" value="4"><div class="pill" id="vFeat">4</div></div>
+    </div>
+    <div class="presets">
+      <button onclick="setPreset(25,4,4)">▸ Edge Model — 4 feat · d4 · 25 trees (what we ship to RTL)</button>
+      <button onclick="setPreset(366,5,40)">▸ Server Model — 40 feat · d5 · 366 trees</button>
+    </div>
+  </div>
+
+  <!-- WHY -->
+  <div class="panel why">
+    <h3>Why this configuration <span class="tag" id="verdictTag"></span></h3>
+    <p id="whyText"></p>
+    <div class="insight"><b>The exponential wall:</b> hardware comparators = <code>trees × (2^depth − 1)</code>. Depth is exponential — depth 10 is <b>~33×</b> the area of depth 5. That's why deep trees are a hardware trap. (They also overfit — we measured it — so we never wanted them anyway.)</div>
+    <div class="insight"><b>Software doesn't care:</b> a CPU/ESP32 walks the trees one node at a time from memory — cost is linear (<code>trees × depth</code>), not exponential. A huge model just takes a few more microseconds. So "fits in hardware" is a different question from "runs on a chip."</div>
+    <div class="insight"><b>The trees are cheap; the features are expensive.</b> Adding features barely changes the tree logic — but each feature must be <i>computed</i> in hardware (rolling means = shift registers; the messy ones need variable divisors + missingness tracking). And every feature you compute, you must verify <b>bit-exact</b> against Python. That verification cost — not silicon area — is the real reason we ship 4 clean features instead of 40.</div>
+    <p class="foot">Hardware numbers are exact. ROC-AUC is illustrative, anchored to two <b>measured</b> points: 4 features → 0.674, 40 features → 0.722 (5-fold patient CV). Both models fit real FPGAs; the edge model fits the <i>cheapest</i> one and is tractable to verify.</p>
+  </div>
+</div>
+
+<script>
+const FPGA_BUDGET = 5000;          // comfortable logic budget of a small/cheap edge FPGA
+const $ = id => document.getElementById(id);
+
+// build axis ticks
+const ticks = [0,500,1000,1500,2000,2500,3000,3500,4000,4500,5000];
+$('axis').innerHTML = ticks.map(t=>`<span>${t.toLocaleString()}</span>`).join('');
+
+function estAuc(features, depth){
+  // feature saturation anchored at (4,0.674) and (40,0.722), asymptote ~0.731
+  let base = 0.731 - 0.057*Math.exp(-(features-4)/11);
+  // optimal depth grows with features; too deep overfits, too shallow underfits
+  let opt = Math.log2(Math.max(features,2)) + 2.2;   // ~4 at 4 feat, ~7 at 40 feat
+  if(depth > opt) base -= (depth-opt)*0.006;          // overfit penalty
+  if(depth < opt) base -= (opt-depth)*0.004;          // underfit penalty
+  return Math.max(0.55, Math.min(0.74, base));
+}
+
+function verify(features){
+  if(features<=4)  return ['Tractable','var(--green)','4 clean 3h-mean features — realistic to match Python bit-for-bit.'];
+  if(features<=12) return ['Moderate','var(--amber)','more rolling features to replicate exactly.'];
+  if(features<=25) return ['Hard','#f0883e','many features incl. deltas — exact match gets fiddly.'];
+  return ['Very hard','var(--red)','40+ feats: 6h buffers, NaN variable-divisor means, missingness tracking — a serious bit-exact challenge.'];
+}
+
+function update(){
+  const trees=+$('sTrees').value, depth=+$('sDepth').value, feat=+$('sFeat').value;
+  $('vTrees').textContent=trees; $('vDepth').textContent=depth; $('vFeat').textContent=feat;
+
+  const comps = trees*(Math.pow(2,depth)-1);
+  const sw = trees*depth;
+  const fe = feat;                       // relative feature front-end units
+  const [vlabel,vcolor,vdesc] = verify(feat);
+  const auc = estAuc(feat,depth);
+
+  // bars (scaled to 5000 axis; clamp visual at 100%)
+  const pctHW = Math.min(100, comps/FPGA_BUDGET*100);
+  const pctSW = Math.min(100, sw/FPGA_BUDGET*100);
+  $('barHW').style.width = Math.max(3,pctHW)+'%';
+  $('barHW').textContent = comps.toLocaleString();
+  $('barHW').style.background = comps<=FPGA_BUDGET ? 'var(--amber)' : 'var(--red)';
+  $('barSW').style.width = Math.max(3,pctSW)+'%';
+  $('barSW').textContent = sw.toLocaleString();
+
+  // FPGA limit line at budget
+  $('limitLine').style.left = '100%';
+  $('limitLbl').textContent = 'small FPGA ≈ '+FPGA_BUDGET.toLocaleString();
+
+  // metrics
+  $('mHW').textContent = comps.toLocaleString();
+  $('mHW').style.color = comps<=FPGA_BUDGET ? 'var(--amber)' : 'var(--red)';
+  $('mHWn').textContent = comps<=FPGA_BUDGET ? 'fits a cheap FPGA' : 'needs a mid-range FPGA (50k–500k LUTs)';
+  $('mSW').textContent = sw.toLocaleString();
+  $('mFE').textContent = fe+(fe===1?' feat':' feats');
+  $('mVer').textContent = vlabel; $('mVer').style.color=vcolor;
+  $('mAuc').textContent = auc.toFixed(3);
+
+  // verdict + why
+  let tag, tagcol, why;
+  const overfit = depth > Math.log2(Math.max(feat,2))+3;
+  if(comps<=FPGA_BUDGET && feat<=4){
+    tag='✓ ships to RTL'; tagcol='var(--green)';
+    why='Tiny, fully parallel (one clock cycle), and — crucially — its 4-feature front-end is realistic to verify bit-exact against Python. This is the artifact we compile.';
+  } else if(comps<=FPGA_BUDGET){
+    tag='✓ synthesizable'; tagcol='var(--green)';
+    why='Fits a cheap FPGA, but '+feat+' features mean a heavier front-end to compute and verify. Possible, but more verification work than the 4-feature edge model.';
+  } else {
+    tag='△ bigger FPGA'; tagcol='var(--amber)';
+    why='Past a small FPGA’s comfortable budget — still synthesizable on a mid-range part, just larger. Note: this is an AREA point, not "impossible." A CPU/ESP32 wouldn’t blink ('+sw.toLocaleString()+' sequential ops).';
+  }
+  if(overfit) why += ' ⚠ At this depth-vs-features ratio the model is likely OVERFITTING — deeper trees memorise noise, so the score would drop.';
+  $('verdictTag').textContent=tag; $('verdictTag').style.background=tagcol; $('verdictTag').style.color='#0d0f14';
+  $('whyText').textContent=why;
+  $('mAucn').textContent = overfit ? 'illustrative · likely overfit' : 'illustrative';
+}
+
+function setPreset(t,d,f){ $('sTrees').value=t; $('sDepth').value=d; $('sFeat').value=f; update(); }
+['sTrees','sDepth','sFeat'].forEach(id=>$(id).addEventListener('input',update));
+update();
+</script>
+</body>
+</html>

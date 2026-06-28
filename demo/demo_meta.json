@@ -1,0 +1,10 @@
+{
+  "patient_id": "11575",
+  "n_hours": 22,
+  "alarm_threshold": 0.03689999878406525,
+  "first_warning_hour": 13,
+  "clinical_onset_hour": 19,
+  "first_alarm_hour": 9,
+  "lead_hours": 4,
+  "server_auc": 0.7254658063378037
+}

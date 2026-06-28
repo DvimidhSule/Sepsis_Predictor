@@ -1,0 +1,12 @@
+{
+  "features": [
+    "Temp_mean3",
+    "Resp_mean3",
+    "HR_mean3",
+    "SBP_mean3"
+  ],
+  "best_iteration": 24,
+  "max_depth": 4,
+  "roc_auc": 0.6735814099899939,
+  "pr_auc": 0.040998347528008613
+}

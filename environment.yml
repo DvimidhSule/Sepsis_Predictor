@@ -1,0 +1,20 @@
+name: ml
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas
+  - numpy
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - ipykernel
+  - jupyterlab
+  - iverilog        # Verilog simulator for co-simulation verification (or use Vivado XSim)
+  - pip
+  - pip:
+    - xgboost          # TreeSHAP comes free via booster.predict(pred_contribs=True) — no `shap` lib needed
+    - optuna
+    - dash
+    - plotly
