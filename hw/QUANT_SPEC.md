@@ -20,7 +20,7 @@ The fixed-point quantization results in a negligible ROC-AUC degradation of **0.
 
 ## 2. Number Formats
 
-To ensure a simple and efficient hardware datapath, we use a uniform fixed-point format for the input features and thresholds, and a separate format for the leaf values.
+To ensure a simple and efficient hardware datapath, I use a uniform fixed-point format for the input features and thresholds, and a separate format for the leaf values.
 
 | Signal | Scaling Factor | Range (Observed) | Bit-Width | Format |
 | :--- | :--- | :--- | :--- | :--- |
@@ -40,7 +40,7 @@ Constants used in generator script:
 The XGBoost model generates risk probabilities using the logistic sigmoid function:
 $$p = \frac{1}{1 + e^{-\sum \text{leaves}}}$$
 
-Since the sigmoid function is strictly monotonic, we can perform classification by comparing the raw margin accumulation directly to a threshold:
+Since the sigmoid function is strictly monotonic, I can perform classification by comparing the raw margin accumulation directly to a threshold:
 $$\text{alarm} = (\text{accumulator} \ge \text{ALARM\_THRESHOLD})$$
 
 This design eliminates the need for complex exponential calculations or division units on the FPGA, saving logic resources.
@@ -51,6 +51,6 @@ This design eliminates the need for complex exponential calculations or division
 
 XGBoost handles missing input features natively by learning a default routing direction (left or right) for each split. 
 
-In Verilog, we represent this by carrying a `valid` bit alongside each input feature:
+In Verilog, I represent this by carrying a `valid` bit alongside each input feature:
 - If `valid` is high, the comparator compares the feature value to the threshold.
 - If `valid` is low (indicating a missing measurement), the multiplexer automatically routes the datapath to the learned default branch.

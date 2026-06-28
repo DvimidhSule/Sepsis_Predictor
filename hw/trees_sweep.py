@@ -33,7 +33,7 @@ def run(lr, n):
     b = xgb.train(p, dtr, num_boost_round=n)   # NO early stopping — force exactly n trees
     return roc_auc_score(yv, b.predict(dval)), roc_auc_score(yt, b.predict(dte))
 
-print('lr=0.1 (our edge setting), forcing N trees, NO early stopping:')
+print('lr=0.1 (the edge setting), forcing N trees, NO early stopping:')
 print(f'{"trees":>6} {"val-AUC":>8} {"test-AUC":>9}')
 for n in [5,10,25,50,100,200,500,1000]:
     va, ta = run(0.1, n)

@@ -14,13 +14,13 @@ In hardware design for tree ensembles on FPGAs, the logic footprint is driven by
    - **Depth 10:** 1,023 comparators per tree
 2. **Feature Complexity:** Calculating rolling features in hardware requires registers and buffers. A larger feature space requires a wider datapath and increases routing complexity.
 
-Our evaluation showed that deep trees on a small feature set quickly lead to overfitting. Capping the edge model at **depth 4** provides optimal generalization performance while keeping the hardware footprint extremely small (375 comparators).
+My evaluation showed that deep trees on a small feature set quickly lead to overfitting. Capping the edge model at **depth 4** provides optimal generalization performance while keeping the hardware footprint extremely small (375 comparators).
 
 ---
 
 ## 2. Platform Suitability (FPGA vs. MCU)
 
-When deploying tree ensembles to a microcontroller (e.g. ESP32), evaluation cost scales linearly with the number of trees, as trees are evaluated sequentially in software. Evaluating a 366-tree ensemble requires only a few microseconds, making both our server and edge models computationally feasible on standard MCUs.
+When deploying tree ensembles to a microcontroller (e.g. ESP32), evaluation cost scales linearly with the number of trees, as trees are evaluated sequentially in software. Evaluating a 366-tree ensemble requires only a few microseconds, making both my server and edge models computationally feasible on standard MCUs.
 
 Deploying to an FPGA, however, allows **deterministic, parallel, single-cycle inference** and provides a pathway for ultra-low-power, battery-operated clinical sensors. This implementation serves as a scalable template for compilation of tree models directly into combinational Verilog.
 
@@ -28,7 +28,7 @@ Deploying to an FPGA, however, allows **deterministic, parallel, single-cycle in
 
 ## 3. Two-Model Architecture & Verification
 
-We trained two separate models to analyze the performance-to-hardware trade-off:
+I trained two separate models to analyze the performance-to-hardware trade-off:
 
 | Parameter | Edge Model (RTL Engine) | Server Model |
 | :--- | :--- | :--- |

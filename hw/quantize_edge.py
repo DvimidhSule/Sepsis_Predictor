@@ -66,7 +66,7 @@ def margin_float(x):
         s += nodes[nid][1]
     return s
 
-# sanity: our float replica must reproduce the XGBoost ranking exactly
+# sanity: my float replica must reproduce the XGBoost ranking exactly
 m_float = np.array([margin_float(x) for x in X_test])
 print(f'Pure-Python float replica ROC-AUC: {roc_auc_score(y_test, m_float):.4f}  (must match reference)')
 
