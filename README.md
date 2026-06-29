@@ -1,6 +1,6 @@
 # Real-Time Explainable Sepsis Early-Warning Engine
 
-An end-to-end machine learning to hardware deployment pipeline. This project trains an XGBoost model on raw vital signs to predict sepsis onset early, compiles the model into synthesizable fixed-point Verilog, and demonstrates real-time monitoring via an interactive Dash dashboard.
+An end-to-end machine learning model compiled to synthesizable Verilog, verified in RTL simulation, and deployed as a real-time explainable bedside monitoring engine. This project trains an XGBoost model on raw vital signs to predict sepsis onset early and demonstrates real-time monitoring via an interactive Dash dashboard.
 
 ---
 
@@ -34,22 +34,20 @@ To ensure clinical generalizability, I implemented a strict, leak-free validatio
 ## Directory Structure
 
 ```
-├── 01_sepsis_eda_modeling.ipynb        # Comprehensive EDA, feature engineering, and model training
+├── 01_sepsis_eda_modeling.ipynb        # Full EDA, feature engineering, and model training
 ├── 01_sepsis_eda_modeling_clean.ipynb  # Cleaned, presentation-ready modeling pipeline
 ├── models/                             # Saved XGBoost models and isotonic calibration files
-├── hw/                                 # Hardware compiler, RTL modules, and testbenches
-│   ├── generate_verilog.py             # Script to compile XGBoost trees to Verilog
+├── hw/
+│   ├── generate_verilog.py             # Compiles XGBoost trees to Verilog
 │   ├── sepsis_engine.v                 # Generated combinational Verilog engine
 │   ├── tb_sepsis_engine.v              # Co-simulation verification testbench
-│   ├── tb_demo_patients.v              # Patient streaming simulation demo
-│   ├── DESIGN_CHOICES.md               # Hardware design trade-offs and complexity analysis
-│   └── QUANT_SPEC.md                   # Fixed-point quantization specifications
-├── demo/                               # Web dashboard files
+│   └── tb_demo_patients.v              # Patient streaming simulation demo
+├── demo/
 │   ├── app.py                          # Interactive Dash dashboard
 │   └── prepare_demo.py                 # Extracts test patient and SHAP drivers for demo
-├── DEVLOG.md                           # Chronological notes on challenges and solutions
-├── PROJECT_SUMMARY.md                  # Unified reference sheet for model and hardware details
-└── INTERVIEW_QA.md                     # Technical Q&A preparation
+├── figures/                            # Waveform screenshots and dashboard images
+├── environment.yml                     # Conda environment spec
+└── .gitignore
 ```
 
 ---
