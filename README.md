@@ -20,6 +20,17 @@ The project is structured around two models:
 
 ---
 
+## Validation Rigor & Preventing Data Leakage
+
+Many public models on the PhysioNet 2019 dataset claim inflated ROC-AUC scores (0.95+) by using row-level splits or applying oversampling techniques like SMOTE to the entire dataset prior to splitting. 
+
+To ensure clinical generalizability, I implemented a strict, leak-free validation pipeline:
+* **Patient-Level Split:** I use `GroupShuffleSplit` on `patient_id` (80/20 train/test split) to guarantee zero patient overlap. Row-level splitting lets the model memorize patient-specific baselines, which artificially inflates test performance.
+* **No SMOTE/Oversampling Leakage:** I avoid oversampling entirely and instead handle class imbalance using class weights (`scale_pos_weight`) during training. Oversampling before train/test splitting interpolates training samples from real test cases, creating massive data leakage.
+* **Feature Selection Integrity:** I purged all laboratory and administrative fields (like ICU length of stay) to prevent the model from learning operational indicators or clinical suspicion rather than physiological trends.
+
+---
+
 ## Directory Structure
 
 ```
