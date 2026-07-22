@@ -1,0 +1,73 @@
+=== Sepsis flagship model on BRD2605A (SiWG917, Cortex-M4F) ===
+model: 346 trees, 40 features, 20414 nodes | core 180 MHz
+vec  0: margin=1.62063 (ref 1.62063) | 2732570 cyc | 15180.94 us
+vec  1: margin=1.30310 (ref 1.30310) | 2713798 cyc | 15076.65 us
+vec  2: margin=1.63936 (ref 1.63936) | 2705069 cyc | 15028.16 us
+vec  3: margin=2.20326 (ref 2.20326) | 2849176 cyc | 15828.75 us
+vec  4: margin=2.12643 (ref 2.12643) | 2807020 cyc | 15594.55 us
+vec  5: margin=1.61455 (ref 1.61455) | 2809405 cyc | 15607.80 us
+vec  6: margin=1.49723 (ref 1.49723) | 2857582 cyc | 15875.45 us
+vec  7: margin=1.79052 (ref 1.79052) | 2810638 cyc | 15614.65 us
+vec  8: margin=1.35033 (ref 1.35033) | 2808262 cyc | 15601.45 us
+vec  9: margin=1.10858 (ref 1.10858) | 2856394 cyc | 15868.85 us
+vec 10: margin=1.53592 (ref 1.53592) | 2795653 cyc | 15531.40 us
+vec 11: margin=1.46176 (ref 1.46176) | 2798947 cyc | 15549.70 us
+vec 12: margin=0.91497 (ref 0.91497) | 2731708 cyc | 15176.15 us
+vec 13: margin=1.78054 (ref 1.78054) | 2826505 cyc | 15702.80 us
+vec 14: margin=1.75935 (ref 1.75935) | 2806184 cyc | 15589.91 us
+vec 15: margin=1.61137 (ref 1.61137) | 2774846 cyc | 15415.81 us
+vec 16: margin=1.40689 (ref 1.40689) | 2769355 cyc | 15385.30 us
+vec 17: margin=1.53949 (ref 1.53949) | 2826037 cyc | 15700.20 us
+vec 18: margin=1.65027 (ref 1.65027) | 2806579 cyc | 15592.10 us
+vec 19: margin=1.36749 (ref 1.36749) | 2805742 cyc | 15587.45 us
+vec 20: margin=1.21343 (ref 1.21343) | 2762461 cyc | 15347.00 us
+vec 21: margin=1.34494 (ref 1.34494) | 2826055 cyc | 15700.30 us
+vec 22: margin=1.35976 (ref 1.35976) | 2802979 cyc | 15572.10 us
+vec 23: margin=1.14291 (ref 1.14291) | 2810215 cyc | 15612.30 us
+vec 24: margin=0.74076 (ref 0.74076) | 2775170 cyc | 15417.61 us
+vec 25: margin=0.03440 (ref 0.03440) | 2844325 cyc | 15801.80 us
+vec 26: margin=0.34064 (ref 0.34064) | 2822401 cyc | 15680.00 us
+vec 27: margin=0.21418 (ref 0.21418) | 2840311 cyc | 15779.50 us
+vec 28: margin=0.31526 (ref 0.31526) | 2803753 cyc | 15576.40 us
+vec 29: margin=0.32060 (ref 0.32060) | 2856115 cyc | 15867.30 us
+vec 30: margin=0.22819 (ref 0.22819) | 2832580 cyc | 15736.55 us
+vec 31: margin=0.10390 (ref 0.10390) | 2831743 cyc | 15731.90 us
+vec 32: margin=0.11402 (ref 0.11402) | 2807488 cyc | 15597.15 us
+vec 33: margin=0.20621 (ref 0.20621) | 2842282 cyc | 15790.45 us
+vec 34: margin=-0.07257 (ref -0.07257) | 2838187 cyc | 15767.70 us
+vec 35: margin=0.12308 (ref 0.12308) | 2821204 cyc | 15673.35 us
+vec 36: margin=0.32276 (ref 0.32276) | 2785943 cyc | 15477.46 us
+vec 37: margin=0.26250 (ref 0.26250) | 2844612 cyc | 15803.40 us
+vec 38: margin=0.56629 (ref 0.56629) | 2823688 cyc | 15687.15 us
+vec 39: margin=0.85513 (ref 0.85513) | 2823652 cyc | 15686.95 us
+vec 40: margin=0.84624 (ref 0.84624) | 2786752 cyc | 15481.95 us
+vec 41: margin=0.15748 (ref 0.15748) | 2843172 cyc | 15795.40 us
+vec 42: margin=0.27450 (ref 0.27450) | 2824561 cyc | 15692.00 us
+vec 43: margin=0.11210 (ref 0.11210) | 2658835 cyc | 14771.30 us
+vec 44: margin=0.22902 (ref 0.22902) | 2788813 cyc | 15493.40 us
+vec 45: margin=-0.05237 (ref -0.05237) | 2856322 cyc | 15868.45 us
+vec 46: margin=-0.00129 (ref -0.00129) | 2739871 cyc | 15221.50 us
+vec 47: margin=-0.08392 (ref -0.08392) | 2841472 cyc | 15785.95 us
+vec 48: margin=-0.01713 (ref -0.01713) | 2806598 cyc | 15592.21 us
+vec 49: margin=-0.11743 (ref -0.11743) | 2849581 cyc | 15831.00 us
+vec 50: margin=-0.23105 (ref -0.23105) | 2845081 cyc | 15806.00 us
+vec 51: margin=-0.18278 (ref -0.18278) | 2841823 cyc | 15787.90 us
+vec 52: margin=-0.15989 (ref -0.15989) | 2808712 cyc | 15603.95 us
+vec 53: margin=-0.22147 (ref -0.22147) | 2859724 cyc | 15887.35 us
+vec 54: margin=-0.15049 (ref -0.15049) | 2845891 cyc | 15810.50 us
+vec 55: margin=-0.55204 (ref -0.55204) | 2810755 cyc | 15615.30 us
+vec 56: margin=-0.58697 (ref -0.58697) | 2788030 cyc | 15489.05 us
+vec 57: margin=-0.63859 (ref -0.63859) | 2787670 cyc | 15487.05 us
+vec 58: margin=-0.51096 (ref -0.51096) | 2807074 cyc | 15594.85 us
+vec 59: margin=-0.63586 (ref -0.63586) | 2881864 cyc | 16010.35 us
+vec 60: margin=-0.65936 (ref -0.65936) | 2852857 cyc | 15849.20 us
+vec 61: margin=-0.76796 (ref -0.76796) | 2831212 cyc | 15728.95 us
+vec 62: margin=-0.51579 (ref -0.51579) | 2813140 cyc | 15628.55 us
+vec 63: margin=-1.34923 (ref -1.34923) | 2790343 cyc | 15501.90 us
+---------------------------------------------------------------
+inferences: 64 | on-device vs host-reference mismatches: 0
+cycles  min=2658835  avg=2810106  max=2881864
+latency min=14771.30 us  avg=15611.70 us  max=16010.35 us
+throughput ~64 inferences/sec
+checksum: 35.20318
+=== done ===

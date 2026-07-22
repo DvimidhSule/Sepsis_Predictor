@@ -1,0 +1,223 @@
+"""
+Compiles the flagship (40-feature server) XGBoost model to a dependency-free
+float C inference function for the Cortex-M4F on the Silicon Labs BRD2605A (SiWG917).
+
+The M4 has a hardware FPU and megabytes of flash, so unlike the gate-bound FPGA edge
+model it can run the *full* model directly. This emits:
+  - hw/mcu/sepsis_flagship_model.h / .c   float inference (uses the FPU)
+  - hw/mcu/test_vectors.h                 embedded test vectors + expected margins
+  - hw/flagship_golden_vectors.csv        full validation set (for the gcc bit-check)
+
+The model is float, so it is bit-for-bit the same model as the Python float booster
+(agreement validated in 02_mcu_deployment.ipynb and by hw/mcu/validate_c.c).
+
+Run from repo root:  python hw/generate_c.py
+"""
+import os
+import numpy as np
+import pandas as pd
+import xgboost as xgb
+from sklearn.model_selection import GroupShuffleSplit
+
+VITALS = ['HR', 'O2Sat', 'Temp', 'SBP', 'MAP', 'DBP', 'Resp', 'EtCO2']
+FEATURES = (VITALS + [f'{v}_mean3' for v in VITALS] + [f'{v}_mean6' for v in VITALS]
+            + [f'{v}_delta3' for v in VITALS] + [f'{v}_missing' for v in VITALS])
+N_FEAT = len(FEATURES)
+MODEL_PATH = 'models/sepsis_booster.json'
+OUT_DIR = 'hw/mcu'
+N_EMBED = 64          # vectors embedded on-device for the timing benchmark
+N_VALIDATE = 2000     # vectors for the host-side bit-agreement check
+
+os.makedirs(OUT_DIR, exist_ok=True)
+
+# ---- rebuild the exact feature matrix + test split (same seeds as the notebooks) ----
+print('Loading data/Dataset.csv ...')
+raw = pd.read_csv('data/Dataset.csv')
+df = raw.rename(columns={'Patient_ID': 'patient_id'}).copy()
+grp = df.groupby('patient_id', sort=False)
+for v in VITALS:
+    df[f'{v}_mean3'] = grp[v].rolling(3, min_periods=1).mean().reset_index(level=0, drop=True)
+    df[f'{v}_mean6'] = grp[v].rolling(6, min_periods=1).mean().reset_index(level=0, drop=True)
+    df[f'{v}_delta3'] = grp[v].diff(3)
+    df[f'{v}_missing'] = df[v].isna().astype('int8')
+
+gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+_, te_idx = next(gss.split(df, groups=df['patient_id']))
+test_df = df.iloc[te_idx]
+
+# ---- load model, parse trees (same approach as quantize_edge.py) ----
+bst = xgb.Booster()
+bst.load_model(MODEL_PATH)
+best_it = bst.attributes().get('best_iteration')
+n_trees = (int(best_it) + 1) if best_it is not None else bst.num_boosted_rounds()
+
+tdf = bst.trees_to_dataframe()
+tdf = tdf[tdf['Tree'] < n_trees]
+feat_idx = {f: i for i, f in enumerate(FEATURES)}
+
+# per-tree local node dicts
+trees = []
+for t, sub in tdf.groupby('Tree'):
+    nodes = {}
+    for _, r in sub.iterrows():
+        nid = int(r['Node'])
+        if r['Feature'] == 'Leaf':
+            nodes[nid] = ('leaf', float(r['Gain']))
+        else:
+            yes = int(r['Yes'].split('-')[1]); no = int(r['No'].split('-')[1]); mis = int(r['Missing'].split('-')[1])
+            nodes[nid] = ('split', feat_idx[r['Feature']], float(r['Split']), yes, no, mis)
+    trees.append(nodes)
+print(f'Parsed {len(trees)} trees')
+
+# ---- flatten to one global node array; children become global indices ----
+# layout per node: (feature, thresh, yes, no, missing, leaf); leaf sentinel feature = 255
+FEAT_LEAF = 255
+flat = []            # list of tuples
+tree_roots = []
+for nodes in trees:
+    base = len(flat)
+    local_ids = sorted(nodes.keys())
+    remap = {lid: base + k for k, lid in enumerate(local_ids)}
+    tree_roots.append(remap[0])
+    for lid in local_ids:
+        nd = nodes[lid]
+        if nd[0] == 'leaf':
+            flat.append((FEAT_LEAF, 0.0, 0, 0, 0, nd[1]))
+        else:
+            _, fi, thr, yes, no, mis = nd
+            flat.append((fi, thr, remap[yes], remap[no], remap[mis], 0.0))
+print(f'Flattened to {len(flat)} nodes')
+
+# ---- pin the base margin empirically (independent of base_score storage) ----
+def py_tree_sum(x):
+    # traverse in float32 to mirror xgboost's internal comparison precision
+    s = np.float32(0.0)
+    for root in tree_roots:
+        n = root
+        while flat[n][0] != FEAT_LEAF:
+            fi, thr, yes, no, mis, _ = flat[n]
+            v = x[fi]
+            n = mis if np.isnan(v) else (yes if np.float32(v) < np.float32(thr) else no)
+        s += np.float32(flat[n][5])
+    return float(s)
+
+probe = test_df[FEATURES].values[:256].astype(np.float32)
+dprobe = xgb.DMatrix(probe, feature_names=FEATURES)
+xgb_margin = bst.predict(dprobe, iteration_range=(0, n_trees), output_margin=True)
+py_sum = np.array([py_tree_sum(x) for x in probe])
+base_margin = float(np.median(xgb_margin - py_sum))
+resid = np.max(np.abs((py_sum + base_margin) - xgb_margin))
+print(f'Base margin = {base_margin:.8f} | max residual vs xgboost margin = {resid:.2e}')
+
+# ---- emit the C model ----
+def cfloat(x):
+    if np.isnan(x):
+        return 'NAN'
+    s = f'{x:.9g}'
+    # "137" -> "137.0f": a bare integer followed by 'f' is not a valid C literal
+    if '.' not in s and 'e' not in s and 'E' not in s:
+        s += '.0'
+    return s + 'f'
+
+header = f"""/* Auto-generated by hw/generate_c.py -- do not edit by hand.
+ * Flagship sepsis model ({n_trees} trees, {N_FEAT} features) compiled to float C
+ * for the Cortex-M4F on the Silicon Labs BRD2605A (SiWG917). Uses the hardware FPU. */
+#ifndef SEPSIS_FLAGSHIP_MODEL_H
+#define SEPSIS_FLAGSHIP_MODEL_H
+
+#define SEPSIS_N_FEATURES {N_FEAT}
+#define SEPSIS_N_TREES     {n_trees}
+#define SEPSIS_N_NODES     {len(flat)}
+
+/* Returns the raw margin (log-odds). */
+float sepsis_predict_margin(const float x[SEPSIS_N_FEATURES]);
+/* Returns calibrated-free sigmoid(margin) probability in [0,1]. */
+float sepsis_predict_proba(const float x[SEPSIS_N_FEATURES]);
+
+#endif /* SEPSIS_FLAGSHIP_MODEL_H */
+"""
+with open(f'{OUT_DIR}/sepsis_flagship_model.h', 'w') as f:
+    f.write(header)
+
+lines = []
+lines.append('/* Auto-generated by hw/generate_c.py -- do not edit by hand. */')
+lines.append('#include "sepsis_flagship_model.h"')
+lines.append('#include <math.h>')
+lines.append('')
+lines.append('typedef struct {')
+lines.append('    unsigned char feature;  /* 255 = leaf */')
+lines.append('    float thresh;')
+lines.append('    unsigned short yes, no, missing;')
+lines.append('    float leaf;')
+lines.append('} sepsis_node_t;')
+lines.append('')
+lines.append(f'#define SEPSIS_BASE_MARGIN ({cfloat(base_margin)})')
+lines.append('')
+lines.append('static const unsigned short SEPSIS_TREE_ROOTS[SEPSIS_N_TREES] = {')
+for i in range(0, len(tree_roots), 16):
+    lines.append('    ' + ', '.join(str(r) for r in tree_roots[i:i+16]) + ',')
+lines.append('};')
+lines.append('')
+lines.append('static const sepsis_node_t SEPSIS_NODES[SEPSIS_N_NODES] = {')
+for fi, thr, yes, no, mis, leaf in flat:
+    lines.append(f'    {{{fi}, {cfloat(thr)}, {yes}, {no}, {mis}, {cfloat(leaf)}}},')
+lines.append('};')
+lines.append('')
+lines.append('float sepsis_predict_margin(const float x[SEPSIS_N_FEATURES]) {')
+lines.append('    float sum = SEPSIS_BASE_MARGIN;')
+lines.append('    for (int t = 0; t < SEPSIS_N_TREES; ++t) {')
+lines.append('        unsigned int n = SEPSIS_TREE_ROOTS[t];')
+lines.append('        while (SEPSIS_NODES[n].feature != 255) {')
+lines.append('            const sepsis_node_t *nd = &SEPSIS_NODES[n];')
+lines.append('            float v = x[nd->feature];')
+lines.append('            if (isnan(v))      n = nd->missing;')
+lines.append('            else if (v < nd->thresh) n = nd->yes;')
+lines.append('            else               n = nd->no;')
+lines.append('        }')
+lines.append('        sum += SEPSIS_NODES[n].leaf;')
+lines.append('    }')
+lines.append('    return sum;')
+lines.append('}')
+lines.append('')
+lines.append('float sepsis_predict_proba(const float x[SEPSIS_N_FEATURES]) {')
+lines.append('    return 1.0f / (1.0f + expf(-sepsis_predict_margin(x)));')
+lines.append('}')
+lines.append('')
+with open(f'{OUT_DIR}/sepsis_flagship_model.c', 'w') as f:
+    f.write('\n'.join(lines))
+
+# ---- full validation set: inputs + xgboost margin/proba (for host bit-check) ----
+val = test_df[FEATURES].values[:N_VALIDATE].astype(np.float64)
+dval = xgb.DMatrix(val, feature_names=FEATURES)
+val_margin = bst.predict(dval, iteration_range=(0, n_trees), output_margin=True)
+val_proba = bst.predict(dval, iteration_range=(0, n_trees))
+gv = pd.DataFrame(val, columns=FEATURES)
+gv['xgb_margin'] = val_margin
+gv['xgb_proba'] = val_proba
+gv.to_csv('hw/flagship_golden_vectors.csv', index=False)
+print(f'Wrote hw/flagship_golden_vectors.csv ({len(gv)} rows)')
+
+# ---- embedded test-vector header for the on-device benchmark ----
+emb = val[:N_EMBED]
+emb_margin = val_margin[:N_EMBED]
+vh = []
+vh.append('/* Auto-generated by hw/generate_c.py -- do not edit by hand. */')
+vh.append('#ifndef SEPSIS_TEST_VECTORS_H')
+vh.append('#define SEPSIS_TEST_VECTORS_H')
+vh.append('#include <math.h>')
+vh.append(f'#define SEPSIS_N_VECTORS {N_EMBED}')
+vh.append('#define SEPSIS_VEC_FEATURES 40')
+vh.append('static const float SEPSIS_TEST_X[SEPSIS_N_VECTORS][SEPSIS_VEC_FEATURES] = {')
+for row in emb:
+    vh.append('    {' + ', '.join(cfloat(v) for v in row) + '},')
+vh.append('};')
+vh.append('/* Expected margins from the Python/xgboost float model (host reference). */')
+vh.append('static const float SEPSIS_TEST_MARGIN[SEPSIS_N_VECTORS] = {')
+for i in range(0, N_EMBED, 8):
+    vh.append('    ' + ', '.join(cfloat(m) for m in emb_margin[i:i+8]) + ',')
+vh.append('};')
+vh.append('#endif /* SEPSIS_TEST_VECTORS_H */')
+with open(f'{OUT_DIR}/test_vectors.h', 'w') as f:
+    f.write('\n'.join(vh))
+print(f'Wrote {OUT_DIR}/test_vectors.h ({N_EMBED} embedded vectors)')
+print('Done.')

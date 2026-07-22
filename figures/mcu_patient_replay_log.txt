@@ -1,0 +1,58 @@
+=== BEDSIDE MONITOR REPLAY: held-out ICU patients on silicon ===
+model: flagship (346 trees, 40 features) | calibrated risk, alarm thresh 0.037
+
+--- Patient A: SEPTIC (held-out test patient 11575) ---
+hour   HR  Temp Resp  SBP |  risk  | ALARM label
+ h00    --   --   --   -- | 0.018 |   0     0
+ h01   88   --  16 106 | 0.008 |   0     0
+ h02   91   --  18 102 | 0.013 |   0     0
+ h03   86   --   5 144 | 0.008 |   0     0
+ h04   95   --  19 171 | 0.024 |   0     0
+ h05   85 37.0  13 145 | 0.010 |   0     0
+ h06  100   --  25 155 | 0.011 |   0     0
+ h07  100   --  21 121 | 0.013 |   0     0
+ h08   97   --  21 122 | 0.013 |   0     0
+ h09  102 38.4  23 129 | 0.044 |   1     0  <-- ALARM raised
+ h10  102   --  21 143 | 0.037 |   0     0
+ h11  101   --  24 145 | 0.070 |   1     0
+ h12  101 37.8  15 152 | 0.029 |   0     0
+ h13  101   --  26 132 | 0.044 |   1     1  <-- sepsis warning label
+ h14  101   --  25 167 | 0.067 |   1     1
+ h15   96   --  24 155 | 0.040 |   1     1
+ h16   96   --  23 111 | 0.040 |   1     1
+ h17   93 38.6  23 127 | 0.084 |   1     1
+ h18   92   --  22 113 | 0.139 |   1     1
+ h19   91   --  19  97 | 0.089 |   1     1
+ h20   88   --  19  84 | 0.067 |   1     1
+ h21   81 37.6  17 107 | 0.029 |   0     1
+device-vs-host risk mismatches: 0/22
+first alarm h9 | first warning label h13 -> 4 h early warning on silicon
+
+--- Patient B: CONTROL, non-septic (held-out test patient 99) ---
+hour   HR  Temp Resp  SBP |  risk  | ALARM label
+ h00   76 35.3  15 135 | 0.006 |   0     0
+ h01   76 35.7  16 132 | 0.005 |   0     0
+ h02   74   --  14 140 | 0.006 |   0     0
+ h03   69 35.3  15 136 | 0.006 |   0     0
+ h04   72 35.9  16 155 | 0.006 |   0     0
+ h05   64   --  14 158 | 0.006 |   0     0
+ h06   71 35.3  15 138 | 0.007 |   0     0
+ h07   83   --  17 122 | 0.008 |   0     0
+ h08   89 37.0  16 125 | 0.007 |   0     0
+ h09   91   --  17 125 | 0.010 |   0     0
+ h10   88   --  30 136 | 0.010 |   0     0
+ h11   90 37.2  32 133 | 0.013 |   0     0
+ h12   92   --  19 130 | 0.017 |   0     0
+ h13   96   --  19 124 | 0.023 |   0     0
+ h14   94 37.7  18 130 | 0.023 |   0     0
+ h15   96   --  22 126 | 0.029 |   0     0
+ h16   97   --  21 123 | 0.029 |   0     0
+ h17   94   --  22 147 | 0.029 |   0     0
+ h18  100 37.5  17 121 | 0.024 |   0     0
+ h19   98   --  17 102 | 0.024 |   0     0
+ h20   93   --  16 104 | 0.029 |   0     0
+ h21   95   --  19  87 | 0.029 |   0     0
+device-vs-host risk mismatches: 0/22
+alarm stayed quiet for all 22 h (correct: non-septic patient)
+
+=== replay done | total device-vs-host mismatches: 0 ===
